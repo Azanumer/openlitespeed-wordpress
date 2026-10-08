@@ -1,0 +1,53 @@
+# ----------------------------------------------------------------------
+# .htaccess add-on for WordPress on OpenLiteSpeed
+#
+# Paste at the TOP of the site's .htaccess (before the WP block).
+# Enables: HTTPS canonical redirect, browser cache headers,
+# LiteSpeed Cache control from the LSCache plugin (it auto-adds
+# its own markers — these lines only cover what the plugin misses).
+# ----------------------------------------------------------------------
+
+<IfModule LiteSpeed>
+# Force HTTPS + canonical www/non-www (pick ONE line, delete the other)
+RewriteEngine On
+RewriteCond %{HTTPS} !=on
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+# RewriteCond %{HTTP_HOST} ^www\.(.*)$ [NC]
+# RewriteRule ^(.*)$ https://%1/$1 [L,R=301]
+</IfModule>
+
+# --- browser cache for static assets --------------------------------
+<IfModule mod_expires.c>
+ExpiresActive On
+ExpiresByType image/webp                   "access plus 1 year"
+ExpiresByType image/jpeg                    "access plus 1 year"
+ExpiresByType image/png                     "access plus 1 year"
+ExpiresByType image/avif                    "access plus 1 year"
+ExpiresByType text/css                      "access plus 1 year"
+ExpiresByType application/javascript        "access plus 1 year"
+ExpiresByType font/woff2                    "access plus 1 year"
+ExpiresByType application/pdf               "access plus 1 year"
+</IfModule>
+
+# --- never cache the dynamic bits ------------------------------------
+<FilesMatch "^(wp-login\.php|wp-cron\.php|xmlrpc\.php)$">
+<IfModule mod_headers.c>
+Header set Cache-Control "no-store, no-cache, must-revalidate"
+</IfModule>
+</FilesMatch>
+
+# --- keep plugins' cache folders out of search engines ---------------
+<FilesMatch "^(advanced-cache\.php|object-cache\.php)$">
+Require all denied
+</FilesMatch>
+
+# ----------------------------------------------------------------------
+# LSCache + ESI notes (for the LiteSpeed Cache for WordPress plugin):
+#
+# * General > Cache: ON, Cache Logged-in Users: OFF, Cache Commenters: OFF
+# * ESI: enable if your theme has dynamic widgets in cached pages
+# * Exclude URIs (one per line): /cart /checkout /my-account /wp-admin/*
+# * "Do Not Cache Cookies": wordpress_logged_in_* (default)
+# * Purge All on plugin/theme update is safe; schedule a nightly purge
+#   only if you publish on a fixed schedule.
+# ----------------------------------------------------------------------
